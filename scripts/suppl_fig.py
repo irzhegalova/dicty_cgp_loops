@@ -38,7 +38,7 @@ from matplotlib.transforms import Affine2D
 from matplotlib.collections import PathCollection
 
 import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 
 from custom_functions import *
 from sum_expr_around_anchors \
@@ -92,7 +92,7 @@ PALETTES = {
 
 _register_cmaps()
 # %%
-fasta_file = bioframe.load_fasta("/home/fox/projects/dicty/hic_loop_study/data/genome/dicty.fa")
+fasta_file = bioframe.load_fasta("~/projects/dicty/hic_loop_study/data/genome/dicty.fa")
 # a = (g/2)^G+C × ((1-g)/2)^A+T,
 # where:
 # a = probability
@@ -205,7 +205,7 @@ axs0[1].set(title="\n".join(wrap("HiCRep correlation between samples", 25)))
 axs0[1].tick_params(axis='y',rotation=45)
 
 import sys
-# sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/')
+# sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/')
 # import cis_trans_ratio as ctr
 # Time = 0
 # # Parse chromosome info
@@ -363,7 +363,7 @@ def plot_stages_networks(axs2):
     """
     
     # Read the data
-    dots_4kb = pd.read_excel('/home/fox/projects/dicty/hic_loop_study/data/Long_loops_02-06.mod.xlsx',
+    dots_4kb = pd.read_excel('~/projects/dicty/hic_loop_study/data/Long_loops_02-06.mod.xlsx',
                         names=['chrom1', 'start1', 'end1', 'chrom2', 'start2', 'end2', 'stage'])
     
     # Lowercase chromosome names
@@ -482,7 +482,7 @@ axs1[0,0].text(-0.1, 1.1, string.ascii_lowercase[2], transform=axs1[0,0].transAx
 subfigs[1].suptitle('Insulation score with different window size')
 
 import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from custom_functions import *
 
 # Define the settings for the plot
@@ -798,7 +798,7 @@ subfigs = fig.subfigures(4, 1, wspace=0.07, height_ratios=[4, 2, 2, 2])
 axs0 = subfigs[0].subplots(4, 4, width_ratios=[1.5, 1.5, 1.5, 1.5], height_ratios=[1.2, 1.2, 1.2, 0.2] )#, sharey='row'
 
 import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from coolpuppy_func import add_heatmap_custom
 from custom_functions import *
 fill=True
@@ -1585,7 +1585,7 @@ plotpup.plot(pup,
              height=5)
 # %%
 import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from coolpuppy_func import add_heatmap_custom
 fig = plt.figure(layout="constrained", figsize=(18*cm, 6*cm))
 
@@ -1725,7 +1725,7 @@ plt.show()
 # Loop coordinates in vegetative cells, migrating, and aggregating Dicty cells. The following parameters are listed: left coordinate of the 2-kb genomic bin identified as the 5’-anchor, right coordinate of the 2-kb genomic bin identified as the 3’-anchor, loop type, development stage, loop score (may be interpreted as the loop strength).
 
 import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from custom_functions import create_rnaseq_df, compute_avMiddlePixels
 from elscore import compute_fc_flames, compute_flames
 # import elscore

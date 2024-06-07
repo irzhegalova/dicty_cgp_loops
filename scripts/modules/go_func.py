@@ -15,7 +15,7 @@ import wget
 import os
 import sys
 
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from custom_functions import create_rnaseq_df
 
 def compute_bma(termcounts, go, gene1='DDB_G0283757', gene2='DDB_G0292268', threshold=None):

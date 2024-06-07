@@ -7,7 +7,7 @@ import seaborn as sns
 
 # %%
 import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from custom_functions import pValue_featureOccurenceInLoop
 
 # %% D_pur
@@ -96,85 +96,15 @@ df_synteny_cl1.sort_values(['chrom_ddi', 'start_ddi'], inplace=True)
 df_synteny_cl1[['start_ddi', 'end_ddi']] = df_synteny_cl1[['start_ddi', 'end_ddi']].astype(int)
 df_synteny_cl1.to_csv('results/synteny_manualMerge.anchors.bed', sep="\t", index=False, header=False)
 
-# %% synteny symap
-synteny_df_old = pd.read_table('/home/fox/tools/symap_5/data/seq_results/d_disc_to_dicties_hits7/final/block.txt').sort_values(['grp1', 'start1'])
-synteny_df_old['length'] = synteny_df_old.end1 - synteny_df_old.start1
-synteny_df = pd.read_table('/home/fox/tools/symap_5/data/seq_results/d_disc_to_dicties_hits2/final/block.txt').sort_values(['grp1', 'start1'])
-synteny_df['length'] = synteny_df.end1 - synteny_df.start1
-synteny_df = synteny_df.loc[(synteny_df["#gene1"] < 7) | (synteny_df["#gene2"] < 7), :]
-synteny_df = pd.concat([synteny_df, synteny_df_old])
-synteny_df_smartFilter = synteny_df.loc[:,['grp1', 'start1', 'end1']]
-synteny_df_smartFilter.columns = ['chrom', 'start', 'end']
-synteny_df_smartFilter.to_csv('results/synteny_smallSymap.SmartFiltered.bed', sep="\t", index=False, header=False)
-# synteny_df_cl = bioframe.merge(synteny_df, cols=['grp1', 'start1', 'end1'],)
-# synteny_df.loc[:,['grp1', 'start1', 'end1']].to_csv('results/synteny_smallSymap.bed', sep="\t", index=False, header=False)
 
-
-# %%
-df_synteny_cl1 = pd.concat([synteny_df_smartFilter.loc[:, ['chrom', 'start']], synteny_df_smartFilter.loc[:, ['chrom', 'end']]])
-df_synteny_cl1.loc[df_synteny_cl1['start'].isna(), 'start'] = df_synteny_cl1.loc[df_synteny_cl1['start'].isna(), 'end']
-df_synteny_cl1['end'] = df_synteny_cl1['start'] + 1
-df_synteny_cl1.sort_values(['chrom', 'start'], inplace=True)
-df_synteny_cl1[['start', 'end']] = df_synteny_cl1[['start', 'end']].astype(int)
-df_synteny_cl1.to_csv('results/synteny_smallSyMap.SmartFiltered.borders.bed', sep="\t", index=False, header=False)
-# df_synteny_cl1 = pd.concat([synteny_df.loc[:, ['grp1', 'start1']], synteny_df.loc[:, ['grp1', 'end1']]])
-# df_synteny_cl1.loc[df_synteny_cl1['start1'].isna(), 'start1'] = df_synteny_cl1.loc[df_synteny_cl1['start1'].isna(), 'end1']
-# df_synteny_cl1['end1'] = df_synteny_cl1['start1'] + 1
-# df_synteny_cl1.sort_values(['grp1', 'start1'], inplace=True)
-# df_synteny_cl1[['start1', 'end1']] = df_synteny_cl1[['start1', 'end1']].astype(int)
-# df_synteny_cl1.to_csv('results/synteny_smallSyMap.filtered.borders.bed', sep="\t", index=False, header=False)
-
-# %% acnhors from SyMap
-orhologous_df = pd.read_table('/home/fox/tools/symap_5/data/seq_results/d_disc_to_dicties/final/anchors.txt')
-orhologous_df['chrom'] = orhologous_df.block.str.split('.', expand=True)[0].tolist()
-orhologous_df.loc[:,['chrom', 'start1', 'end1']].to_csv('results/anchors_smallSymap.bed', sep="\t", index=False, header=False)
-# %%
-import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
-from custom_functions import pValue_featureOccurenceInLoop
-for cl in range(6):
-    loops_kmeans = 'data/genome/loops_withGroup' + str(cl) + '.bed3'
-# loops_kmeans = 'data/loops_quantifyChromosight/0AB_chromosight_quantifyMarkedGood.bed'
-    pValue_featureOccurenceInLoop(file_loops=loops_kmeans, 
-        time=None,
-        mode='inside-1bin',
-        N_shuffle=1000,
-        file_features='results/synteny_smallSymap.SmartFiltered.bed',
-        name='synteny_smallSyMap.filtered_loopWithGroup%s' % cl)
 # %%
 mode = 'inside-1bin'
 pValue_featureOccurenceInLoop(file_loops='results/0AB_loops_notBMA.bed', #'results/0AB_loops_thresBMA.bed', 
         time=None,
         mode=mode,
         N_shuffle=1000,
-        file_features='data/genome/Blocks_of_conserved_gene_order.bed', #'results/synteny_smallSymap.SmartFiltered.bed',
+        file_features='data/genome/Blocks_of_conserved_gene_order.bed',
         name='synteny_notBMA.%s' % mode)
-# %%
-for mode in ['anchors_3bins', 'inside-1bin']: #'whole', , 
-    pValue_featureOccurenceInLoop(file_loops=loops_kmeans, 
-        time=None,
-        mode=mode,
-        N_shuffle=1000,
-        file_features='results/synteny_smallSyMap.filtered.borders.bed', #'results/0AB_loops_thresBMA.bed',
-        name='SyntenysmallSymapFilteredBorders_loop_mode_%s' % (mode))
-# %%
-for mode in ['whole']: #'whole', , 
-    pValue_featureOccurenceInLoop(file_features='results/V_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.bed', 
-        time=None,
-        mode=mode,
-        N_shuffle=1000,
-        file_loops='results/synteny_smallSymap.SmartFiltered.bed', #'results/0AB_loops_thresBMA.bed',
-        name='SyntenysmallSymapSmartFilteredBorders_enhancer_mode_%s' % (mode))
-    
-
-# %% higlass
-# clodius aggregate bedfile \
-# --chromsizes-filename data/genome/dicty.chrom.sizes \
-# results/synteny_smallSymap.bed
-
-# clodius aggregate bedfile \
-# --chromsizes-filename data/genome/dicty.chrom.sizes \
-# results/synteny_Symap.bed
 
 # %%
 import bioframe

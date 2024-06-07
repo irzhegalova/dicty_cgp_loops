@@ -11,7 +11,7 @@ from matplotlib.colors import LogNorm
 
 import sys
 
-sys.path.append("/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/")
+sys.path.append("~/projects/dicty/hic_loop_study/scripts/functions/modules/")
 from custom_functions import *
 import cooltools
 import cooler

@@ -20,13 +20,13 @@ from cooltools.lib.numutils import LazyToeplitz
 
 import subprocess
 import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from elscore import compute_fc_flames, compute_flames
 import elscore
 
 from functions import dataframe_difference, prepare_view_df
 
-os.chdir('/home/fox/projects/dicty/hic_loop_study/')
+os.chdir('~/projects/dicty/hic_loop_study/')
 
 # %%
 print(cooler.__version__)

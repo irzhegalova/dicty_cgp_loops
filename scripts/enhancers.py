@@ -6,7 +6,7 @@ Count enhancers in loop anchors and create random control for shuffle test
 # %%
 import multiprocess
 import os
-os.chdir('/home/fox/projects/dicty/hic_loop_study/')
+os.chdir('~/projects/dicty/hic_loop_study/')
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -24,7 +24,7 @@ from bioframe.ops import parse_region
 from pybedtools import BedTool
 
 import sys
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from custom_functions import plot_avLoop, create_stack, _create_stack, pValue_featureOccurenceInLoop, load_BedInMode, create_rnaseq_df, wrap_labels, plot_around_anchors, get_expression_sum_interesectingFeature, const_line, names_mergedIDR_dic, time_dic, create_rnaseq_df_rosengarten
 # import custom_functions
 
@@ -560,7 +560,7 @@ for state in ['M']: #'V', 'S',
 
     bioframe.to_bigwig(df=H3K27ac_df, chromsizes=df_chromsizes,
                        outpath='bw/%s_H3K27ac_merged.mLb.clN.bgNorm.zscore.bw' % (state),
-                       path_to_binary='/home/fox/micromamba/envs/omics_env/bin/bedGraphToBigWig')
+                       path_to_binary='~/micromamba/envs/omics_env/bin/bedGraphToBigWig')
 # %% zscore atacseq
 import bioframe
 from scipy.stats import zscore
@@ -576,13 +576,13 @@ for state in ['Vegetative']: #'V', 'S',
 
     bioframe.to_bigwig(df=H3K27ac_df, chromsizes=df_chromsizes,
                        outpath='bw/%s_merged.BPM.zscore.bw' % (state),
-                       path_to_binary='/home/fox/micromamba/envs/omics_env/bin/bedGraphToBigWig')
+                       path_to_binary='~/micromamba/envs/omics_env/bin/bedGraphToBigWig')
 
 # %% cov by peaks
 import bioframe
 from scipy.stats import zscore
 df_chromsizes = bioframe.read_chromsizes('data/genome/dicty.chrom.sizes')
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from custom_functions import plot_around_loop
 for state in ['M']: #, 'M' , 'S'
     # load windows
@@ -594,7 +594,7 @@ for state in ['M']: #, 'M' , 'S'
     # export bioframe directly to bigwig
     bioframe.to_bigwig(df=df1_coverage, chromsizes=df_chromsizes,
                            outpath='bw/%s_enhancers_cov.w500.zscore.bw' % (state),
-                           path_to_binary='/home/fox/micromamba/envs/omics_env/bin/bedGraphToBigWig')
+                           path_to_binary='~/micromamba/envs/omics_env/bin/bedGraphToBigWig')
 # %% plot enhancer coverage around loops
 mode = 'median'
 from custom_functions import plot_around_loop
@@ -1096,7 +1096,7 @@ plt.savefig("results/pics/paper/scatter_8_5_log2TPM_boxplot_difEnh.pdf", dpi=100
 plt.show()
 
 # %% Venn
-sys.path.append('/home/fox/projects/dicty/hic_loop_study/scripts/functions/modules/')
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from venn_mpl import venn_mpl
 V_enhancer_noPromoter_bed = BedTool('results/V_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.bed')
 S_enhancer_noPromoter_bed = BedTool('results/S_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.bed')
@@ -2541,7 +2541,7 @@ plt.savefig("results/pics/paper/lineplot_enh.acetylOnly.ratio_me31.pdf", dpi=100
 plt.show()
 plt.clf()
 # %%
-os.chdir('/home/fox/projects/dicty/hic_loop_study/')
+os.chdir('~/projects/dicty/hic_loop_study/')
 plot_around_loop(#'bw/IS/0AB.20k.IS.cooltools.bw', 
                 'bw/0AB_CS.1kb.bw',
                 #'bw/dicty.IS.5k.bw',
