@@ -1,31 +1,25 @@
-# Created by ir.zhegalova at Sept 7, 2022
-# Script description:
-"""
-Count enhancers in loop anchors and create random control for shuffle test
-"""
 # %%
-import multiprocess
-import os
-os.chdir('~/projects/dicty/hic_loop_study/')
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import matplotlib.axes as axes
 import bioframe
-import bioframe as br
+
 import cooler
-import cooltools.api.expected as ce
-import cooltools.api.snipping as clsnip
-from cooltools.lib.numutils import LazyToeplitz
 import cooltools.lib.plotting
 from bioframe import count_overlaps
-from bioframe.ops import parse_region
 from pybedtools import BedTool
 
+from scipy.stats import zscore
+from statannot import add_stat_annotation
+
 import sys
+import os
+os.chdir('~/projects/dicty/hic_loop_study/')
+
 sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
-from custom_functions import plot_avLoop, create_stack, _create_stack, pValue_featureOccurenceInLoop, load_BedInMode, create_rnaseq_df, wrap_labels, plot_around_anchors, get_expression_sum_interesectingFeature, const_line, names_mergedIDR_dic, time_dic, create_rnaseq_df_rosengarten
+from custom_functions import pValue_featureOccurenceInLoop, load_BedInMode, create_rnaseq_df, wrap_labels, plot_around_anchors, get_expression_sum_interesectingFeature, const_line, names_mergedIDR_dic, time_dic, create_rnaseq_df_rosengarten
 # import custom_functions
 
 # %% check versions
@@ -34,13 +28,11 @@ print(cooltools.__version__)
 print(bioframe.__version__)
 
 # %%
-# results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak
 V_h3k27ac = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/V_H3K27ac_idr_peaks.narrowPeak")
 S_h3k27ac = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/S_H3K27ac_idrPR_peaks.narrowPeak")
 V_h3k4me1 = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/V_H3K4me1_idrPR_peaks.narrowPeak")
 S_h3k4me1 = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/S_H3K4me1_idr_peaks.narrowPeak")
-#("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/S_H3K27ac_idr_peaks.narrowPeak")
-# results/atac_seq_wang/bwa/mergedReplicate/macs/narrowPeak
+
 V_atacseq = BedTool("results/atac_seq_wang/bwa/mergedLibrary/macs/narrowPeak/Vegetative_r123.narrowPeak") #Vegetative.mRp.clN_peaks.narrowPeak") #
 S_atacseq = BedTool("results/atac_seq_wang/bwa/mergedLibrary/macs/narrowPeak/Streaming_r123.mergeIDR.bed")
 promoters = BedTool("data/genome/promoters.bed")
@@ -52,7 +44,7 @@ for time in ['V', 'S', 'M' ]: #
     V_h3k4me1 = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/%s_%s_peaks.narrowPeak" % (time, names_mergedIDR_dic[time][1]))
     V_h3k4me3 = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/%s_%s_peaks.narrowPeak" % (time, names_mergedIDR_dic[time][3]))
     time_atac = time_dic[time][1]
-    V_atacseq = BedTool("results/atac_seq_wang/bwa/mergedLibrary/macs/narrowPeak/%s_%s.bed" % (time_atac, names_mergedIDR_dic[time][2])) #Vegetative_r123.narrowPeak") #Vegetative.mRp.clN_peaks.narrowPeak") #
+    V_atacseq = BedTool("results/atac_seq_wang/bwa/mergedLibrary/macs/narrowPeak/%s_%s.bed" % (time_atac, names_mergedIDR_dic[time][2])) 
 
     V_chipseq_df = V_h3k27ac.intersect(V_h3k4me1, e=True, f=0.25, F=0.25, wo=True).to_dataframe(names=range(0,40)).iloc[:,[0,1,19,20,21]]
     V_chipseq_df.columns = ['start1', 'end1', 'chrom', 'start2', 'end2']
@@ -62,11 +54,10 @@ for time in ['V', 'S', 'M' ]: #
     V_chipseq_bed = BedTool.from_dataframe(V_chipseq_df).saveas('results/%s_idrMergeIdr.chipseqUnion.bed' % (time))
 
     # V_chipseq_bed = V_h3k27ac.intersect(V_h3k4me1, f=0.25, F=0.25)
-    V_enhancer_df = V_atacseq.intersect(V_chipseq_bed, f=0.25, F=0.25).to_dataframe().iloc[:,[0,1,2]] #wo=True, .iloc[:,[0,1,3,4,5]]    .intersect(V_h3k4me3, v=True)
+    V_enhancer_df = V_atacseq.intersect(V_chipseq_bed, f=0.25, F=0.25).to_dataframe().iloc[:,[0,1,2]] 
     V_enhancer_df['name'] = V_enhancer_df.index
     V_atacseq.intersect(V_chipseq_bed, f=0.25, F=0.25).intersect(V_h3k4me3, v=True).saveas('results/%s_idrMergeIdr.chipseqUnionInteresectATAC.withH3k4me3.bed' % (time))
-    # V_atacseq.intersect(V_chipseq_bed, f=0.25, F=0.25).saveas('results/%s_idrMergeIdr.chipseqUnionInteresectATAC.withPromoters.bed' % (time))
-    # filter out promoters
+
     V_enhancer_noPromoter_bed = BedTool.from_dataframe(V_enhancer_df).intersect(promoters, v=True)
     # filter out genes
     V_enhancer_noGenes_bed = V_enhancer_noPromoter_bed.intersect(genes, v=True)
@@ -101,10 +92,8 @@ Part 1. Check whether enhancers are not randomly located
 
 # Percent of overlaps
 time = '0'
-# "results/long_loops/loops_rightFlames0.2.bedpe",
-# "data/loops_quantifyChromosight/0AB_chromosight_quantifyMarkedGood.bedpe"
+
 df_loops = bioframe.read_table(
-    #'data/loops_quantifyChromosight/%sAB_chromosight_mergedAnchors.bed' % (time),
     'data/loops_quantifyChromosight/0AB_chromosight_quantifyMarkedGood.bedpe',
     schema='bedpe', schema_is_strict=False #'bed3'
 ).iloc[:, 0:6]
@@ -114,8 +103,6 @@ el_loops = ['results/long_loops/loops_rightFlames0.2.leftAnchor.7bins.bed',
 'results/long_loops/loops_rightFlames0.2.rightAnchor.3bins.bed']
 
 enh_files = ['results/V_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.bed']
-#['results/VM_common_enhancers.bed',
-#'results/V_specific_enhancers.bed', 'results/M_specific_enhancers.bed'] #
 
 for loop in el_loops:
     df_loops = bioframe.read_table(
@@ -124,20 +111,11 @@ for loop in el_loops:
     )   
     for enh in enh_files:
 
-    # mode = 'anchors_3bins'
-    # file_loops = 'data/loops_quantifyChromosight/%sAB_chromosight_quantifyMarkedGood.bed'
-    # df_loops = load_BedInMode(file_loops, time, mode)
-
         df_enh = bioframe.read_table(
             enh,
-            #'results/V_H3K27ac_V3K4me1_atacseqWang_30k_noPromoters/V_H3K27ac_V3K4me1_atacseqWang_30k_noPromoters.bed3',
             schema='bed3'
         )
 
-
-        # df_loopsWithEnh = bioframe.overlap(df_loops, df_enh, how='left', return_index=True, keep_order=True) #return_input=False, return_overlap=True,
-        # df_loopsWithEnh = df_loopsWithEnh.dropna()
-        # Percent_anchors_with_enh = df_loopsWithEnh['index'].unique().shape[0] * 100 / df_loops.shape[0]
         # easier way
         df_loopsWithEnh = count_overlaps(df_loops, df_enh)
         df_enhWithLoops = count_overlaps(df_enh, df_loops)
@@ -159,15 +137,13 @@ el_loops = ['loops_rightFlames%s.2.leftAnchor.3bins.bed',
 'loops_leftFlames%s.8.rightAnchor.3bins.bed',
 'loops_leftFlames%s.8.leftAnchor.3bins.bed',
 'loops_rightFlames%s.2.rightAnchor.3bins.bed']
-# el_loops = ['loops_rightFlames%s.15.rightAnchor.3bins.bed',
-# 'loops_rightFlames%s.15.leftAnchor.7bins.bed']
-for loop in el_loops: #,  'anchors_3bins', 'inside' []: #
+
+for loop in el_loops:
     print(pValue_featureOccurenceInLoop(file_loops='results/long_loops/'+loop,
                                         time=time_dic[stage][0], mode=mode, N_shuffle=1000,
                                         file_features=file_features,
                                         name=loop +'_enhancersUTI_allLoops_mode_' + mode))
 # %% Shuffle test
-# file_features = "results/V_enhancers_idrMergeIdr.bed"
 stage = 'V'
 file_features = "results/%s_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.bed" % (stage) #"results/%s_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.noH3k4me3.bed" % (stage) # #
 for mode in ['start_3bins', 'end_3bins']: #, ,    'anchors_3bins', 'inside' ,'start', 'end'[]: #
@@ -192,7 +168,6 @@ for mode in ['start_3bins', 'end_3bins']: #, ,    'anchors_3bins', 'inside' ,'st
     #                                     file_features=file_features, name='V_enhancersUTI.noH3k4me3_loopsBMA_mode_' + mode))
 
 # %%
-# results/long_loops/0AB_regular_loops.MegredAnchors.1bins_added.bed6
 mode='anchors_3bins'
 stage = 'V'
 file_features = "results/%s_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.bed" % (stage)
@@ -241,10 +216,6 @@ for name in ['V_spec', 'M_spec', 'VMcommon']:
 genes = BedTool('data/genome/genes.bed3')
 V_specific_enhancers = M_specific_enhancers_bed.to_dataframe()
 V_specific_enhancers['gene_cov'] = V_specific_enhancers_bed.coverage(genes).to_dataframe().thickStart.astype("float").tolist()
-# genes_df['M_spec'] = genes.coverage(M_specific_enhancers_bed).to_dataframe().thickStart.astype("float").tolist()
-# genes_df['VMcommon'] = genes.coverage(VM_common_enhancers_bed).to_dataframe().thickStart.tolist()
-# genes_df_fil = genes_df.query('VMcommon > 0 or M_spec > 0 or V_spec > 0')
-# for name in ['V_spec', 'M_spec', 'VMcommon']:
 sns.histplot(data=V_specific_enhancers, x='gene_cov', kde=True,  stat="percent")
 # plt.savefig("results/pics/paper/%s_percInGenes.pdf" % (name), dpi=100,
 #             bbox_inches='tight')
@@ -280,11 +251,7 @@ tpm_df_with = tpm_df_with.loc[tpm_df.group != 'M_specific_enhancers.bed',]
 
 ax.scatter(data=tpm_df_with, y='log2_8_TPM', x='log2_0_TPM', 
 alpha=0.2, c=tpm_df_with['group'].map(colors))
-# g = sns.lmplot(x = "log2_0_TPM", y = "log2_8_TPM", col = "group",
-#            hue = "group", data = tpm_df_with, 
-#            scatter_kws={"s": 20})
-# axes.Axes.axline((0, 0), (1, 1), linewidth=4, color='r')
-# ax.plot([-5, -5], [10, 10], ls="--", c=".3")
+
 add_identity(ax, color='r', ls="--")
 plt.legend([],[], frameon=False)
 plt.show()
@@ -321,13 +288,8 @@ for file_anchors in files_anchors:
     # f, ax = plt.subplots(figsize=(10, 10))
     colors = {'outside anchors':'red', 'inside anchors':'green'}
     shapes = {'V_specific_enhancers': 'o', 'w/o enhancer': 'x', 'VM_common_enhancers': '+'}
-    tpm_df_with = tpm_df#.loc[tpm_df.group != 'w/o enhancer',]
-    # tpm_df_with = tpm_df_with.loc[tpm_df.group != 'VM_common_enhancers.bed',]
-    # tpm_df_with = tpm_df_with.loc[tpm_df.group != 'M_specific_enhancers',]
+    tpm_df_with = tpm_df
 
-    # ax.scatter(data=tpm_df_with, y='log2_8_TPM', x='log2_0_TPM', 
-    # alpha=0.05, c=tpm_df_with['anchor_group'].map(colors),
-    # marker=tpm_df_with['group'].map(shapes).tolist())
     g = sns.FacetGrid(tpm_df_with, col="anchor_group", hue='group', height=15)
     g.map(sns.scatterplot, 'log2_0_TPM','log2_8_TPM', alpha=0.2)
     g.add_legend()
@@ -337,14 +299,6 @@ for file_anchors in files_anchors:
     plt.savefig("results/pics/paper/scatter_TPM_at" + file_anchors.split('.bed')[0] + ".pdf", 
     bbox_inches='tight') #todo
 
-    # sns.scatterplot(data=tpm_df_with, x='log2_0_TPM', alpha=0.2, y='log2_8_TPM', style='group', hue='anchor_group', ax=ax)
-    # g = sns.lmplot(x = "log2_0_TPM", y = "log2_8_TPM", col = "group",
-    #            hue = "group", data = tpm_df_with, 
-    #            scatter_kws={"s": 20})
-    # axes.Axes.axline((0, 0), (1, 1), linewidth=4, color='r')
-    # ax.plot([-5, -5], [10, 10], ls="--", c=".3")
-    
-    # plt.legend([],[], frameon=False)
     plt.show()
     plt.close()
 
@@ -354,7 +308,6 @@ files_anchors= ['loops_rightFlames0.2.leftAnchor.3bins.bed',
 'loops_leftFlames0.8.leftAnchor.3bins.bed',
 'loops_rightFlames0.2.rightAnchor.3bins.bed',
 '0AB_regular_loops.MegredAnchors.bed']
-#'data/loops_quantifyChromosight/0AB_mergedAnchors.q=02.bins_added.bed'
 
 tpm_df = create_rnaseq_df(need_coord=True) #create_rnaseq_df_rosengarten() #
 #tpm_df_DE = tpm_df.loc[tpm_df.name.isin(DE_genes.gene),:]
@@ -396,11 +349,6 @@ for file_feature in file_features:
     # genes_withEnh_vec = tpm_bed.intersect(V_enhancer_noPromoter_bed).to_dataframe().name.tolist()
     tpm_df.loc[tpm_df['name'].isin(genes_NearbyEnh_vec), 'group'] = file_feature.split('/')[1].split('.')[0]
 tpm_df['delta_8_0'] = tpm_df['log2_8_TPM'] - tpm_df['log2_0_TPM']
-# for file_anchors in files_anchors:
-#     tpm_df['anchor_group'] = 'outside anchors'
-#     loopAnchor_bed = BedTool("results/long_loops/" +  file_anchors)
-#     genes_insideanchors_vec = tpm_TSS_bed.intersect(loopAnchor_bed).to_dataframe().name.tolist()
-#     tpm_df.loc[tpm_df['name'].isin(genes_insideanchors_vec), 'anchor_group'] = 'inside anchors'
 
 tpm_df['h3k4me3_group'] = 'no'
 tpm_df.loc[tpm_df['name'].isin(genes_with_h3k4me3_vec), 'h3k4me3_group'] = 'common h3k4me3'
@@ -412,11 +360,9 @@ tpm_df_with = tpm_df.loc[tpm_df.h3k4me3_group != 'no',]
 # tpm_df_with = tpm_df_with.loc[tpm_df.group != 'VM_common_enhancers.bed',]
 # tpm_df_with = tpm_df_with.loc[tpm_df.group != 'M_specific_enhancers',]
 # %%
-from statannot import add_stat_annotation
+
 sns.set(style='white', context='poster', rc={'figure.figsize':(10,10)})
-# g = sns.FacetGrid(tpm_df_with, #col="group", 
-# hue='h3k4me3_group', height=15)
-# g.map(sns.scatterplot, 'log2_0_TPM','log2_8_TPM', alpha=0.5)
+
 g = sns.violinplot(data=tpm_df_with, y='delta_8_0', x='h3k4me3_group')
 add_stat_annotation(g, data=tpm_df_with, x='h3k4me3_group', y='delta_8_0', #order=order,
                     box_pairs=[('common h3k4me3', 'M-spec h3k4me3'),
@@ -424,10 +370,6 @@ add_stat_annotation(g, data=tpm_df_with, x='h3k4me3_group', y='delta_8_0', #orde
                     ('M-spec h3k4me3', 'V-spec h3k4me3')],test='Mann-Whitney', text_format='star', loc='inside', verbose=2)
 
 
-# g.add_legend()
-
-# g.map(const_line)
-#add_identity(g, color='r', ls="--")
 wrap_labels(g, 10)
 plt.savefig("results/pics/paper/violinplot_TPM_withH3k4me3.pdf", 
 bbox_inches='tight') 
@@ -480,17 +422,11 @@ for time in ['M']: #'V', 'S'
                                                 time='0',
                                                 mode=mode, N_shuffle=1000,
                                                 file_features=file_features, name='%s_%s_%s_elLoopsLeft_mode_' % (time, feature, 'noPnoE') + mode))
-            # print(pValue_featureOccurenceInLoop(file_loops='results/long_loops/%sAB_regular_loops.bed',
-            #                                     time='0',
-            #                                     mode=mode, N_shuffle=100,
-            #                                     file_features=file_features, name='%s_%s_%s_elLoopsRegular_mode_' % (time, feature, 'noPnoE') + mode))
+
             print(pValue_featureOccurenceInLoop(file_loops='results/long_loops/%sAB_loops_rightFlames0.2.bed',
                                                 time='0',
                                                 mode=mode, N_shuffle=1000,
                                                 file_features=file_features, name='%s_%s_%s_elLoopsRight_mode_' % (time,feature, 'noPnoE') + mode))
-            # print(pValue_featureOccurenceInLoop(file_loops='results/%sAB_loops_thresBMA.bed',
-            #                                     time='0', mode=mode, N_shuffle=100,
-            #                                     file_features=file_features, name='V_%s_%s_loopsBMA_mode_' % (feature, 'noPnoE') + mode))
 
 # %%
 features = ['results/V_specific_enhancers.bed', 'results/M_specific_enhancers.bed', 'results/VM_common_enhancers.bed']
@@ -539,15 +475,9 @@ for time in ['M']: #, 'S'
                                                 time='0',
                                                 mode=mode, N_shuffle=1000,
                                                 file_features=file_features, name='%s_%s_%s_elLoopsRight_mode_' % (time,feature, 'Promoters') + mode))
-            # print(pValue_featureOccurenceInLoop(file_loops='results/%sAB_loops_thresBMA.bed',
-            #                                     time='0', mode=mode, N_shuffle=100,
-            #                                     file_features=file_features, name='%s_%s_%s_loopsBMA_mode_' % (time, feature, 'Promoters') + mode))
-
-
 
 # %% create zscore
-import bioframe
-from scipy.stats import zscore
+
 df_chromsizes = bioframe.read_chromsizes('data/genome/dicty.chrom.sizes')
 for state in ['M']: #'V', 'S', 
     bw_list = []
@@ -562,8 +492,6 @@ for state in ['M']: #'V', 'S',
                        outpath='bw/%s_H3K27ac_merged.mLb.clN.bgNorm.zscore.bw' % (state),
                        path_to_binary='~/micromamba/envs/omics_env/bin/bedGraphToBigWig')
 # %% zscore atacseq
-import bioframe
-from scipy.stats import zscore
 df_chromsizes = bioframe.read_chromsizes('data/genome/dicty.chrom.sizes')
 for state in ['Vegetative']: #'V', 'S', 
     bw_list = []
@@ -579,11 +507,9 @@ for state in ['Vegetative']: #'V', 'S',
                        path_to_binary='~/micromamba/envs/omics_env/bin/bedGraphToBigWig')
 
 # %% cov by peaks
-import bioframe
-from scipy.stats import zscore
+
 df_chromsizes = bioframe.read_chromsizes('data/genome/dicty.chrom.sizes')
-sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
-from custom_functions import plot_around_loop
+
 for state in ['M']: #, 'M' , 'S'
     # load windows
     windows_w500 = bioframe.read_table('data/genome/dicty_w500.bed', 'bed3')
@@ -597,7 +523,6 @@ for state in ['M']: #, 'M' , 'S'
                            path_to_binary='~/micromamba/envs/omics_env/bin/bedGraphToBigWig')
 # %% plot enhancer coverage around loops
 mode = 'median'
-from custom_functions import plot_around_loop
 for state in ['F']:  # , 'V', 'S'
     plot_around_loop("bw/IS/0AB.20k.IS.cooltools.bw", #'bw/wang_rnaseq_bw/Fruiting_R2.TPM_log2.bw',#'bw/0_8_deltaTPM_log2.bw',
                      "%s_IS_around_enhancers_cov.%s.pdf" % (state, mode),
@@ -619,72 +544,6 @@ for state in ['M']:  # , 'V', 'S'
                                "results/long_loops/0AB_regular_loops.bedpe",
                                "results/long_loops/loops_rightFlames0.2.bedpe",
                                "data/loops_quantifyChromosight/0AB_chromosight_quantifyMarkedGood.bedpe"])
-# %% shuffle test - earlier versions
-# dicty_chrom = pd.read_table("data/genome/dicty.chrom.sizes", header=None, index_col=0)
-# dicty_chrom.columns = ['length']
-# dicty_chrom_ser = dicty_chrom.squeeze()
-# dicty_binned = bioframe.binnify(dicty_chrom_ser, 2000)
-#
-# # create shuffled loop anchors
-# import random
-#
-# random.seed(42)
-#
-# shuffled_inter_vec = []
-# N_shuffle = 1000
-# for i in range(N_shuffle):
-#     shuffled_indexes = sorted(random.sample(range(dicty_binned.shape[0]), df_loops.shape[0]))
-#     shuffled_df = dicty_binned.iloc[shuffled_indexes,]
-#     df_loopsWithEnh_shuffled = count_overlaps(shuffled_df, df_enh)
-#     Percent_anchors_with_enh_shuffled = \
-#         sum(df_loopsWithEnh_shuffled['count'] >= 1) * 100 / shuffled_df.shape[0]
-#     shuffled_inter_vec.append(Percent_anchors_with_enh_shuffled)
-#
-# # plot shuffle test
-# inter_shuffle_df = pd.DataFrame({"Shuffle": shuffled_inter_vec})
-#
-# # inter_lasLoops = las_loops.intersect(ncRNA_andFeature)
-# # print(inter_lasLoops.count())
-# fig = sns.histplot(data=inter_shuffle_df, x="Shuffle", kde=True, stat="percent", binwidth=1)
-# fig.axvline(Percent_anchors_with_enh, color="red", lw=3)
-# p_value = np.round(np.min([len(inter_shuffle_df[inter_shuffle_df['Shuffle'] > Percent_anchors_with_enh]) / N_shuffle,
-#                            len(inter_shuffle_df[inter_shuffle_df['Shuffle'] < Percent_anchors_with_enh]) / N_shuffle]),
-#                    3)
-# if p_value == 0:
-#     plt.annotate("p-value < " + str(1 / N_shuffle),
-#                  xy=(0.95, 0.95), xycoords='axes fraction',
-#                  bbox=dict(facecolor='pink',
-#                            alpha=0.5),
-#                  horizontalalignment='right',
-#                  fontsize=12)
-# else:
-#     plt.annotate("p-value = " + str(p_value),
-#                  xy=(0.95, 0.95), xycoords='axes fraction',
-#                  bbox=dict(facecolor='pink',
-#                            alpha=0.5),
-#                  horizontalalignment='right',
-#                  fontsize=12)
-#
-# plt.savefig("results/pics/paper/enh_abundance_shuffledTest.pdf",
-#             bbox_inches='tight')
-# plt.show()
-# plt.clf()
-
-# %% load rna-seq - not useful
-# path_bw = "bw/0_merged.TPM_noSmooth.bw"
-# from bioframe import read_bigwig
-# rna_bw = []
-# for chr in dicty_chrom.index.tolist():
-#     tmp = read_bigwig(path_bw, chr, start=None, end=None, engine='auto')
-#     rna_bw.append(tmp)
-# rna_bw_df = pd.DataFrame(np.concatenate(rna_bw))
-# rna_bw_df.columns = tmp.columns.tolist()
-# rna_bw_df['start'] = pd.to_numeric(rna_bw_df['start'])
-# rna_bw_df['end'] = pd.to_numeric(rna_bw_df['end'])
-# rna_bw_df['value'] = pd.to_numeric(rna_bw_df['value'])
-
-# tmp = bioframe.coverage(dicty_binned, rna_bw_df)
-# tmp.head()
 
 # %% load binned rna-seq
 # multiBigwigSummary bins -b bw/0_merged.TPM_noSmooth.bw -bs 2000 -p 2 -o bw/0_merged.TPM_noSmooth_binned.npz
@@ -796,39 +655,17 @@ tpm_bed = BedTool.from_dataframe(tpm_df.loc[:,['chrom', 'start', 'end', 'name']]
 for time in ['V']: #, 'S', 'M'
 
     V_enhancer_noPromoter_bed = BedTool('results/%s_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.bed' % (time))
-    #('results/pseudoDifEnhacerswithAtac.bed')#
-    # V_h3k27ac = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/%s_%s_peaks.narrowPeak" % (time, names_mergedIDR_dic[time][0]))
-    # V_h3k4me1 = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/%s_%s_peaks.narrowPeak" % (time, names_mergedIDR_dic[time][1]))
-    # time_atac = time_dic[time][1]
-    # V_atacseq = BedTool("results/atac_seq_wang/bwa/mergedLibrary/macs/narrowPeak/%s_%s.bed" % (time_atac, names_mergedIDR_dic[time][2])) #Vegetative_r123.narrowPeak") #Vegetative.mRp.clN_peaks.narrowPeak") #
-    # V_h3k4me3 = BedTool("results/histones_Wang/bwa/mergedLibrary/macs/narrowPeak/%s_%s_peaks.narrowPeak" % (time, names_mergedIDR_dic[time][3]))
-
-    # genes_with_atacseq_bed = tpm_bed.intersect(V_atacseq, f=0.2)
-    # genes_with_atacseq_vec = tpm_bed.intersect(V_atacseq, f=0.2).to_dataframe().name.tolist()
-    # genes_with_h3k27ac_vec = tpm_bed.intersect(genes_with_atacseq_bed, f=0.2).intersect(V_h3k27ac, f=0.2).intersect(V_h3k4me1, f=0.2, v=True).intersect(V_h3k4me3, f=0.2, v=True).to_dataframe().name.tolist()
-
-    # genes_with_h3k4me1_vec = tpm_bed.intersect(genes_with_atacseq_bed, f=0.2).intersect(V_h3k4me1, f=0.2).intersect(V_h3k27ac, f=0.2, v=True).intersect(V_h3k4me3, f=0.2, v=True).to_dataframe().name.tolist()
-
-    # genes_with_h3k4me3_vec = tpm_bed.intersect(genes_with_atacseq_bed, f=0.2).intersect(V_h3k4me3, f=0.2).intersect(V_h3k4me1, f=0.2, v=True).intersect(V_h3k27ac, f=0.2, v=True).to_dataframe().name.tolist()
 
     genes_withEnh_vec = tpm_bed.intersect(V_enhancer_noPromoter_bed, f=0.2).to_dataframe().name.tolist()
     genes_withEnh_upperHalf_vec = tpm_bed.intersect(V_enhancer_noPromoter_bed, f=0.5).to_dataframe().name.tolist()
     tpm_df['group'] = 'w/o enhancer'
-
-    # tpm_df.loc[tpm_df['name'].isin(genes_with_atacseq_vec), 'group'] = 'with ATAC-seq'
-    # tpm_df.loc[tpm_df['name'].isin(genes_with_h3k4me3_vec), 'group'] = 'with H3K4me3 & ATAC-seq'
-    # tpm_df.loc[tpm_df['name'].isin(genes_with_h3k27ac_vec), 'group'] = 'with H3K27ac & ATAC-seq'
-    # tpm_df.loc[tpm_df['name'].isin(genes_with_h3k4me1_vec), 'group'] = 'with H3K4me1 & ATAC-seq'
 
     tpm_df_enh_tmp = tpm_df.loc[tpm_df['name'].isin(genes_withEnh_vec),:]
     tpm_df_enh_tmp.loc[:, 'group'] = 'with enhancers'
     # tpm_df.loc[tpm_df['name'].isin(genes_withEnh_vec), 'group'] = 'with enhancer cov < 0.5'
     # tpm_df.loc[tpm_df['name'].isin(genes_withEnh_upperHalf_vec), 'group'] = 'with enhancer cov > 0.5'
     tpm_df = pd.concat([tpm_df, tpm_df_enh_tmp], ignore_index=True)
-    # sorter = ['w/o enhancer', 'with ATAC-seq', 'with enhancer cov < 0.5', 'with enhancer cov > 0.5', 'with enhancers', 'with H3K27ac & ATAC-seq', 'with H3K4me1 & ATAC-seq', 'with H3K4me3 & ATAC-seq']
-    # tpm_df.group = tpm_df.group.astype("category")
-    # tpm_df.group.cat.set_categories(sorter)
-    # time_int = time_dic[time][0]
+
     time_int=0
     tpm_df['log2_%sAB_introns' % str(time_int)] = np.log2(tpm_df[str(8) + 'AB']+0.01)
 
@@ -908,9 +745,7 @@ tpm_bed = BedTool.from_dataframe(tpm_df.loc[:,['chrom', 'start', 'end', 'name']]
 V_enhancer_noPromoter_bed = BedTool('results/M_notS_enhancers_idrMergeIdr.chipseqUnionThenInteresectATAC.noH3k4me3.bed')
 # V_enhancer_noPromoter= bioframe.read_table('results/5_pseudoDifEnhacersAtacH3K27ac.bed', schema='bed')
 genes_withEnh_vec = tpm_bed.intersect(V_enhancer_noPromoter_bed, f=0.2).to_dataframe().name.tolist()
-# V_enhancer_noPromoter_expanded = bioframe.expand(V_enhancer_noPromoter, pad=2000)
-# genes_inEnhWindow_vec = bioframe.overlap(V_enhancer_noPromoter_expanded, tpm_df, how='inner').name_.tolist()
-# V_enhancer_noPromoter_bed.closest(tpm_bed).to_dataframe().columns[11]
+
 genes_closeEnh_vec = V_enhancer_noPromoter_bed.closest(tpm_bed).to_dataframe().thickEnd.tolist() #DDB_G0267526 DDB_G0269296
 tpm_df.loc[tpm_df['name'].isin(genes_closeEnh_vec),'group'] = 'close enhancers'
 tpm_df.loc[tpm_df['name'].isin(genes_withEnh_vec),'group'] = 'with enhancers'
@@ -1062,18 +897,7 @@ plt.savefig("results/pics/paper/delta_8_0_TPM_boxplot_enh.pdf", dpi=100, bbox_in
 plt.show()
 
 # %%
-def add_identity(axes, *line_args, **line_kwargs):
-    identity, = axes.plot([], [], *line_args, **line_kwargs)
-    def callback(axes):
-        low_x, high_x = axes.get_xlim()
-        low_y, high_y = axes.get_ylim()
-        low = max(low_x, low_y)
-        high = min(high_x, high_y)
-        identity.set_data([low, high], [low, high])
-    callback(axes)
-    axes.callbacks.connect('xlim_changed', callback)
-    axes.callbacks.connect('ylim_changed', callback)
-    return axes
+
 sns.set(style='white', context='poster', rc={'figure.figsize':(40,40)})
 tpm_df_with = tpm_df.loc[tpm_df.group != 'w/o enhancer',]
 tpm_df_with = tpm_df_with.loc[tpm_df.group != 'V-S common',]
@@ -1396,7 +1220,7 @@ V_loops.loc[V_loops_right_with_enh.strand > 0, 'group'] = 'telEnh'
 
 # %%
 from sum_expr_around_anchors \
-    import compute_argminDerative, compute_LoopExprAndStrength, compute_Derivative, compute_exprSumAroundBedAnchor, create_distancesToNextLoop
+    import compute_LoopExprAndStrength
 # ['sum_only']: #  , 'sum_and_subtraction', 'ctrl_for_sum_only'
 tmp_genes = compute_LoopExprAndStrength(#middle_pixel_dict,
                                         mode="two_strands_per_anchor",

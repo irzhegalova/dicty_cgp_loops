@@ -8,8 +8,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib import gridspec
+import matplotlib as mpl
 
-from scipy.stats import bootstrap
+from scipy.stats import bootstrap, linregress
+from functools import partial
 
 from pybedtools import BedTool
 
@@ -21,7 +23,7 @@ import cooltools.api.snipping as clsnip
 from cooltools.lib.numutils import LazyToeplitz
 import cooltools.lib.plotting
 from coolpuppy import coolpup
-# from plotpuppy import plotpup
+from coolpuppy import plotpup
 
 import bioframe
 from bioframe import count_overlaps
@@ -1097,8 +1099,6 @@ def hic_zoo_coolpuppy(
     clr = cooler.Cooler(cooler_path + str(resolution))
 
     # chromsizes
-    tmp = {"chrom": clr.chromsizes.index.to_list(), "end": [3, 4]}
-
     df_chromsizes = clr.chromsizes.reset_index()  # pd.DataFrame(data=tmp)
     # df_chromsizes = pd.read_csv(chromsizes_path, sep='\t', header=None, )
     df_chromsizes.columns = ["chrom", "end"]
@@ -1212,7 +1212,7 @@ def hic_zoo_coolpuppy(
 
 
 def annotate(data, **kws):
-    slope, intercept, r_value, p_value, std_err = stats.linregress(
+    slope, intercept, r_value, p_value, std_err = linregress(
         data.dropna()["delta_is"],  #
         data.dropna()["delta_rna"],
     )
@@ -2908,6 +2908,77 @@ def create_pileup_and_save_plot(clr, conv_pairs_TPM, df_chromsizes, expected_df,
     # Close the plot
     plt.show()
     plt.clf()
+
+def create_perpendicular_flame(
+    paired_sites, clr, df_chromsizes, flank=50000, left=True, pad=2, expected_df=None, both=False
+):
+    """
+    Create a dataframe representing a perpendicular flame plot from a pileup of paired sites.
+
+    Parameters
+    ----------
+    paired_sites : pandas.DataFrame
+        A dataframe containing the paired sites to be plotted, with columns 'chrom', 'start', 'end', and 'name'.
+    clr : cooler.Cooler
+        A cooler object containing the Hi-C data.
+    df_chromsizes : pandas.DataFrame
+        A dataframe containing the chromosome sizes, with columns 'chrom' and 'size'.
+    flank : int, optional
+        The number of base pairs to flank the paired sites by. Default is 50000.
+    left : bool, optional
+        If True, plot the left side of the paired sites. If False, plot the right side. Default is True.
+    pad : int, optional
+        The number of base pairs to pad the paired sites by. Default is 2.
+    expected_df : pandas.DataFrame, optional
+        A dataframe containing the expected values for the pileup. If None, the expected values will be calculated.
+    both : bool, optional
+        If True, plot both sides of the paired sites. If False, plot only one side. Default is False.
+
+    Returns
+    -------
+    df_perp_flames : pandas.DataFrame
+        A dataframe containing the perpendicular flame plot, with columns 'index', 'variable', 'value', and 'log10_value'.
+    """
+    # Calculate the pileup
+    stack = cooltools.pileup(
+        clr, paired_sites, view_df=df_chromsizes, expected_df=expected_df, flank=flank, nproc=8
+    )
+
+    # Calculate the mean of the specified columns
+    if both:
+        perp_N1 = int(stack.shape[1] * 0.25)
+        perp_N2 = int(stack.shape[1] * 0.75)
+        perp_flames = np.nanmean(stack[:, perp_N1 - pad : perp_N1 + 1 + pad, :], axis=1)
+        perp_flames2 = np.nanmean(stack[:, :, perp_N2 - pad : perp_N2 + 1 + pad], axis=2)
+
+        df_perp_flames = pd.DataFrame(perp_flames)
+        df_perp_flames2 = pd.DataFrame(perp_flames2)
+        df_perp_flames['index'] = range(perp_flames.shape[0])
+        df_perp_flames2['index'] = range(perp_flames2.shape[0])
+
+        df_perp_flames_gathered = pd.melt(df_perp_flames, id_vars="index")
+        df_perp_flames_gathered2 = pd.melt(df_perp_flames2, id_vars="index")
+        df_perp_flames_gathered2['variable'] = stack.shape[1] - 1 - df_perp_flames_gathered2.variable
+
+        df_perp_flames_gathered = pd.concat([df_perp_flames_gathered, df_perp_flames_gathered2], ignore_index=True)
+        df_perp_flames_gathered_filt = df_perp_flames_gathered[df_perp_flames_gathered['value'] != 'null']
+        df_perp_flames_gathered_filt['log10_value'] = np.log10(df_perp_flames_gathered_filt['value'].astype('float64'))
+        return df_perp_flames_gathered_filt
+    elif left:
+        perp_N = int(stack.shape[1] * 0.25)
+        perp_flames = np.nanmean(stack[:, perp_N - pad : perp_N + 1 + pad, :], axis=1)
+    else:
+        perp_N = int(stack.shape[1] * 0.75)
+        perp_flames = np.nanmean(stack[:, :, perp_N - pad : perp_N + 1 + pad], axis=2)
+
+    df_perp_flames = pd.DataFrame(perp_flames)
+    df_perp_flames['index'] = range(perp_flames.shape[0])
+    df_perp_flames_gathered = pd.melt(df_perp_flames, id_vars="index")
+
+    df_perp_flames_gathered_filt = df_perp_flames_gathered[df_perp_flames_gathered['value'] != 'null']
+    df_perp_flames_gathered_filt['log10_value'] = np.log10(df_perp_flames_gathered_filt['value'].astype('float64'))
+    return df_perp_flames_gathered_filt
+
     
 def lineplot_plusplus(orientation = "horizontal", **kwargs):
     """
@@ -2935,3 +3006,45 @@ def lineplot_plusplus(orientation = "horizontal", **kwargs):
     line.set_ylabel(xlabel)
     
     return line
+
+def add_identity(axes, *line_args, **line_kwargs):
+    """
+    Add an identity line (y=x) to the given axes.
+
+    Parameters
+    ----------
+    axes : matplotlib.axes.Axes
+        The axes on which to plot the identity line.
+    *line_args : tuple
+        Additional positional arguments to be passed to the plot function.
+    **line_kwargs : dict
+        Additional keyword arguments to be passed to the plot function.
+
+    Returns
+    -------
+    axes : matplotlib.axes.Axes
+        The axes with the identity line added.
+    """
+    # Plot an empty line and store the line object
+    identity, = axes.plot([], [], *line_args, **line_kwargs)
+
+    def callback(axes):
+        # Get the x and y axis limits
+        low_x, high_x = axes.get_xlim()
+        low_y, high_y = axes.get_ylim()
+
+        # Determine the range for the identity line
+        low = max(low_x, low_y)
+        high = min(high_x, high_y)
+
+        # Update the identity line data
+        identity.set_data([low, high], [low, high])
+
+    # Call the callback function to set initial data
+    callback(axes)
+
+    # Connect the callback function to axis limit change events
+    axes.callbacks.connect('xlim_changed', callback)
+    axes.callbacks.connect('ylim_changed', callback)
+
+    return axes

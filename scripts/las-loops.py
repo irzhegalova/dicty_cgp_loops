@@ -1,11 +1,18 @@
 import glob
 import os
+import sys
 import numpy as np
 import pandas as pd
 from bioinfokit.analys import norm
 from pybedtools import BedTool
 import seaborn as sns
 import matplotlib.pyplot as plt
+
+from statannot import add_stat_annotation
+
+sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
+from custom_functions import pValue_featureOccurenceInLoop
+
 # lncRNA & las-loops
 Timing = [0, 8]
 for time in Timing:
@@ -64,8 +71,6 @@ rosengarten_lnRNA_expr = rosengarten_lnRNA_expr.set_index('Gene')
 rosengarten_lnRNA_expr.columns = vec
 
 #tpm-normalized
-from bioinfokit.analys import norm, get_data
-
 nm = norm()
 nm.tpm(df=rosengarten_lnRNA_expr, gl='Length')
 # get TPM normalized dataframe

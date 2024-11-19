@@ -7,6 +7,7 @@ import seaborn as sns
 import os
 import fnmatch
 import multiprocess
+from functools import partial
 
 # import libraries for biological data analysis
 import cooler
@@ -18,13 +19,19 @@ from cooltools.api import snipping
 import cooltools.api.snipping as clsnip
 from cooltools.lib.numutils import LazyToeplitz
 
+
+from coolpuppy import coolpup
+from coolpuppy.lib import numutils
+from coolpuppy.lib.puputils import divide_pups
+from coolpuppy import plotpup
+
 import subprocess
 import sys
 sys.path.append('~/projects/dicty/hic_loop_study/scripts/functions/modules/')
 from elscore import compute_fc_flames, compute_flames
 import elscore
 
-from functions import dataframe_difference, prepare_view_df
+from custom_functions import dataframe_difference, prepare_view_df, add_identity
 
 os.chdir('~/projects/dicty/hic_loop_study/')
 
@@ -83,18 +90,8 @@ expected = cooltools.expected_cis(clr, view_df=df_chromsizes, nproc=4, chunksize
 
 # %%
 flank=40000
-pup = coolpup.pileup(clr, paired_sites,
-rescale=True, rescale_size=int(1+flank * 2// resolution),  rescale_flank=1.5,
-local=True,
-features_format='bed', view_df=df_chromsizes, nproc=4, 
-expected_df=expected, 
-flank=flank, min_diag=2)
-# %%
-from coolpuppy import coolpup
-from coolpuppy.lib import numutils
-from coolpuppy.lib.puputils import divide_pups
-from coolpuppy import plotpup
-import cooler
+pup = coolpup.pileup(clr, paired_sites, rescale=True, rescale_size=int(1+flank * 2// resolution),  rescale_flank=1.5, local=True, features_format='bed', view_df=df_chromsizes, nproc=4,  expected_df=expected, flank=flank, min_diag=2)
+
 plotpup.plot(pup,
              score=False, 
              cmap='coolwarm', #'viridis', #'coolwarm', #
