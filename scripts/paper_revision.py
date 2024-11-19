@@ -1,17 +1,13 @@
 # %% import standard python libraries
-from math import pow
+
 import bioframe as bf
-import networkx as nx
+from coolpuppy import coolpup
+from coolpuppy import plotpup
+
 import os
-import pickle as pkl
-
-
 import pandas as pd
-# from statannot import add_stat_annotation
-from scipy.stats import zscore
 import numpy as np
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+
 
 # DE
 # from pydeseq2.dds import DeseqDataSet
@@ -20,31 +16,18 @@ from sklearn.preprocessing import StandardScaler
 
 import matplotlib.cm as mpl_cm
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-from matplotlib.cm import register_cmap
 import matplotlib as mpl
-import matplotlib.patheffects as pe
-import matplotlib.ticker as ticker
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib.colors import LogNorm, Normalize
 
 import seaborn as sns
-from seaborn.matrix import dendrogram, heatmap
-import string
-# rotate lineplot
-from matplotlib import pyplot, transforms
-from matplotlib.transforms import Affine2D
-from matplotlib.collections import PathCollection
+
 
 import sys
 sys.path.append('/home/mdempg/projects/dicty/hic_loop_study/scripts/functions/modules/')
 
 from custom_functions import *
-from sum_expr_around_anchors \
-    import compute_argminDerative, compute_LoopExprAndStrength, compute_Derivative, compute_exprSumAroundBedAnchor, create_distancesToNextLoop
 
 # fonts
-from textwrap import wrap
 from matplotlib import font_manager
 
 font_dirs = ["/usr/share/fonts/arial/"]  # The path to the custom font file.
@@ -601,8 +584,6 @@ paired_sites = pd.DataFrame({
 paired_sites.head()
 
 # %%
-# paired_sites = bf.read_table('results/long_loops/0AB_loops_leftFlames0.8.bedpe', schema='bedpe')
-# paired_sites.head()
 flank = 30_000
 stack = cooltools.pileup(clr, paired_sites, view_df=df_chromsizes, expected_df=expected_df, flank=flank, nproc=8)
 mtx = np.nanmean(stack, axis=0)
@@ -629,31 +610,6 @@ chromsizes_path='data/genome/dicty.chrom.sizes'
 clr = cooler.Cooler(cooler_path + str(resolution))
 
 expected_df = cooltools.expected_cis(clr, view_df=df_chromsizes, nproc=8, chunksize=1_000_000, ignore_diags=2) #, median=True
-
-# coef_flank=1
-# median_size = np.median(paired_sites.start2 - paired_sites.end1)
-# flank = 20_000#int((median_size * coef_flank // resolution) * resolution)
-
-# sns.set_theme(style="whitegrid")
-
-# f, axes = plt.subplots(2, 2,
-# figsize=(18, 15))
-# plt.ylim([-0.5,0.5])
-# c= 0 
-# perp_flame = create_perp_flame(paired_sites, clr, df_chromsizes, 
-#                                 flank=flank, left = True, 
-#                                 pad = 2, expected_df=expected_df)
-# sns.boxplot(x="variable", y="log10_value", data=perp_flame, ax=axes[c, 0], showfliers=False).set_title('left perp to right-flamed loops')
-# axes[c, 0].set_xlabel('')
-# axes[c, 0].set_ylim([-0.5,0.5])
-
-# # right perp to right-flamed loops
-# perp_flame = create_perp_flame(paired_sites, clr, df_chromsizes, 
-#                                 flank=flank, left = False, 
-#                                 pad = 2, expected_df=expected_df)
-# sns.boxplot(x="variable", y="log10_value", data=perp_flame, ax=axes[c, 1], showfliers=False).set_title('right perp to right-flamed loops')
-# axes[c, 1].set_xlabel('')
-# axes[c, 1].set_ylim([-0.5,0.5])
 
 # %%
 from scipy.stats import mannwhitneyu
